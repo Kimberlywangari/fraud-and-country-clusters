@@ -1,0 +1,11 @@
+# Developed and run on Python 3.14 with the versions below; later versions should also work.
+numpy>=2.0
+pandas>=2.2
+scipy>=1.13
+scikit-learn>=1.5
+xgboost>=2.1
+matplotlib>=3.9
+seaborn>=0.13
+jupyter
+ipykernel
+nbconvert
