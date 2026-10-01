@@ -1,0 +1,4 @@
+,countries,child_mort,exports,health,imports,income,inflation,life_expec,total_fer,gdpp
+"1: Low income, high child mortality",48,88.75,22.4,5.48,39.75,1860.0,7.39,60.75,5.035,758.0
+"2: Middle income, in transition",64,20.5,38.8,5.3149999999999995,42.55,9925.0,8.09,72.3,2.5,4530.0
+"3: High income, long-lived",55,5.5,46.2,8.73,48.7,29600.0,1.4,79.8,1.63,26900.0
