@@ -1,0 +1,5 @@
+quantity,observed,95% low,95% high,final cheaper in
+PR-AUC (final - baseline),0.0,0.0,0.0,
+expected cost @ 10 (final - baseline),5880.0,5400.0,6320.0,0.0
+expected cost @ 100 (final - baseline),58800.0,54000.0,63200.0,0.0
+expected cost @ 1000 (final - baseline),588000.0,540000.0,632000.0,0.0
