@@ -28,6 +28,42 @@ def evaluate(name, y_true, score, threshold, features="", fit_seconds=np.nan):
             "TP": int(tp), "FP": int(fp), "FN": int(fn), "TN": int(tn), "fit_seconds": fit_seconds}
 
 
+# Cost of reviewing one alert, in the same currency units as `amount`. This is an ASSUMPTION, not a fact about PaySim:
+# PaySim amounts run from tens to millions of units, so 10 / 100 / 1000 span "cheap" to "expensive" reviews.
+REVIEW_COSTS = (10, 100, 1000)
+PRIMARY_REVIEW_COST = 100  # the one rule 3 of notebook 03 is judged at; the others are a sensitivity check
+
+
+def missed_amount(y_true, amount, flagged):
+    """Money in fraudulent transactions that were not flagged."""
+    return float(amount[(y_true == 1) & ~flagged].sum())
+
+
+def expected_cost(y_true, amount, flagged, review_cost):
+    """Cost of an operating point: the fraud money that got through, plus `review_cost` for every alert raised.
+
+    Unlike F1 this does not treat a missed fraud and a false alarm as equally bad: a missed fraud costs its amount.
+    """
+    return missed_amount(y_true, amount, flagged) + review_cost * float(flagged.sum())
+
+
+def best_cost_threshold(y_true, amount, score, review_cost):
+    """Score threshold with the lowest expected cost on the given labelled set (flag when score >= threshold).
+
+    Returns inf (flag nothing) if raising no alerts at all is cheaper than any threshold.
+    """
+    order = np.argsort(-score, kind="stable")
+    s = score[order]
+    caught = np.cumsum(amount[order] * y_true[order])  # fraud money caught if the top k rows are flagged
+    alerts = np.arange(1, len(s) + 1)
+    cost = caught[-1] - caught + review_cost * alerts  # money missed + review cost, for k = 1 .. n alerts
+    # A threshold flags every row whose score is >= it, so only cut at the end of a run of equal scores.
+    ends = np.r_[np.flatnonzero(np.diff(s) != 0), len(s) - 1]
+    best = ends[np.argmin(cost[ends])]
+    flag_nothing = caught[-1]  # cost of no alerts: all fraud money is missed
+    return float(s[best]) if cost[best] < flag_nothing else float("inf")
+
+
 class WeightedAP:
     """Average precision under per-row integer weights; ties in the score are grouped (as in scikit-learn).
 

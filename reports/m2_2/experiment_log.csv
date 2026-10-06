@@ -1,2 +1,2 @@
-iteration,name,hypothesis,change,val_PR-AUC,val_FN,val_FP,trees,fit_seconds,sigma_seed,decision
-0,baseline (M2.1),the refactored package reproduces the J1 model,"none: J1 tuned XGBoost, engineered features, max-F1 threshold",0.9971766318083005,5,0,117,20.6,0.0002601072978098277,reference
+iteration,name,hypothesis,change,val_PR-AUC,val_FN,val_FP,trees,fit_seconds,sigma_seed,decision,val_missed_amount,val_alerts,val_cost_c100
+0,baseline (M2.1),the refactored package reproduces the J1 model,"none: J1 tuned XGBoost, engineered features, max-F1 threshold",0.9971766318083005,5,0,117,18.8,0.0002601072978098277,reference,2308170.09,1227.0,2430870.09

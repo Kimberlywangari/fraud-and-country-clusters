@@ -8,3 +8,4 @@ One short entry per working day, written on the day.
 - Added `fraud/model.py` (hyper-parameters read from the J1 search results) and the experiment-log helper; slow test confirms the package reproduces the committed baseline.
 - Notebook 03: pre-registered the decision rules, reproduced the baseline exactly (test PR-AUC 0.9972, 4 FN, 0 FP) and measured the seed noise floor, σ = 0.00026 validation PR-AUC.
 - Next: look at the baseline's validation errors, then iteration 1.
+- Looked at the baseline's 5 validation misses before choosing features: all are emptied-origin transactions where the amount is not the old balance. Defined an expected-cost metric (missed fraud money + review cost per alert) with tests and scored the baseline: it misses 2.31M on validation, 95% of its cost at 100 units per alert.
