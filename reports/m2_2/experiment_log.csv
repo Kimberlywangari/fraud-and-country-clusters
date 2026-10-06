@@ -1,0 +1,2 @@
+iteration,name,hypothesis,change,val_PR-AUC,val_FN,val_FP,trees,fit_seconds,sigma_seed,decision
+0,baseline (M2.1),the refactored package reproduces the J1 model,"none: J1 tuned XGBoost, engineered features, max-F1 threshold",0.9971766318083005,5,0,117,20.6,0.0002601072978098277,reference
