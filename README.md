@@ -62,19 +62,56 @@ The clusters are best read as low / middle / high tiers along a development cont
 
 ---
 
+## M2.2 checkpoint: core development of the fraud model
+
+The J1 fraud model is the capstone's core model, and the J1 end state (`d3eae82`) is the M2.1 baseline. The full write-up is [reports/M2.2_progress_report.md](reports/M2.2_progress_report.md).
+
+| Notebook | What it does | Run time |
+|---|---|---|
+| [03_core_model_iterations.ipynb](notebooks/03_core_model_iterations.ipynb) | Decision rules written first, seed noise floor, then 3 iterations judged on validation | about 30 min |
+| [04_raw_feature_convergence.ipynb](notebooks/04_raw_feature_convergence.ipynb) | A convergence problem found in the J1 ablation model, and its fix | about 12 min |
+| [05_final_comparison.ipynb](notebooks/05_final_comparison.ipynb) | The one test-set comparison, with a paired bootstrap | about 3 min |
+
+**Result.** The baseline is already at the ceiling (test PR-AUC 0.9972, 4 of 1,232 frauds missed, 0 false alarms), and none of the three iterations moved PR-AUC beyond seed noise (σ = 0.00026). One change, a threshold chosen by expected cost, looked good on validation (cost down 27%, or 13% cross-fitted) but on the test set it caught no extra fraud and cost 58,800 more at 100 units per alert, so it is not adopted. The convergence fix cut the raw-feature model from 1,886 to 733 trees at the same accuracy.
+
+| Iteration | Change | Val PR-AUC | Decision |
+|---|---|---|---|
+| 0 | Baseline | 0.99718 | reference |
+| 1 | Ratio and flag features | 0.99730 | reverted (inside noise) |
+| 2 | Cost-based threshold | 0.99718 | kept on validation, not adopted after the test result |
+| 3 | Second-stage search on all of train | 0.99712 | reverted |
+
+| Criterion | Where to find the evidence |
+|---|---|
+| Measurable improvement over the baseline, or a documented reason why not | [Report](reports/M2.2_progress_report.md), notebook 05, [final_comparison.csv](reports/m2_2/final_comparison.csv), [final_bootstrap.csv](reports/m2_2/final_bootstrap.csv) |
+| At least 2 distinct iterations recorded | [experiment_log.csv](reports/m2_2/experiment_log.csv), notebook 03 |
+| A real problem fixed or documented | Notebook 04, [raw_convergence.csv](reports/m2_2/raw_convergence.csv); the threshold problem in notebook 05 |
+| Tests | `python -m pytest -q` (45 fast tests); `python -m pytest -m slow` (2 tests against the real data) |
+| Incremental commit history and daily work | `git log --format='%h %ad %s' --date=short`, [daily_log.md](reports/m2_2/daily_log.md) |
+
+---
+
 ## Repository layout
 
 ```
 data/
   Country-data.csv                          committed (9 KB)
   PS_20174392719_1491204439457_log.csv      NOT committed (470 MB, see below)
+fraud/                                      tested code moved out of notebook 01 (data, features, metrics, model, experiments)
+tests/                                      pytest tests (synthetic frames; two slow ones use the real data)
 notebooks/
   01_supervised_fraud.ipynb
   02_unsupervised_countries.ipynb
+  03_core_model_iterations.ipynb            M2.2
+  04_raw_feature_convergence.ipynb          M2.2
+  05_final_comparison.ipynb                 M2.2
 reports/
   model_comparison.csv  ablation.csv  xgboost_tuning_results.csv
   kmeans_k_selection.csv  country_cluster_profile.csv  country_clusters.csv
+  M2.2_progress_report.md
+  m2_2/   experiment_log.csv  final_comparison.csv  final_bootstrap.csv  raw_convergence.csv  daily_log.md
   figures/*.png
+pytest.ini
 requirements.txt
 ```
 
@@ -90,6 +127,18 @@ requirements.txt
    ```
 
    Notebook 02 takes under a minute. Notebook 01 takes roughly 13–17 minutes on an 8-core machine (the hyper-parameter search is ~6–10 minutes and the raw-feature ablation fit ~4–5 minutes); peak memory is a few GB.
+
+4. For the M2.2 work, run the tests and the three newer notebooks the same way:
+
+   ```
+   python -m pytest -q
+   python -m pytest -m slow
+   python -m nbconvert --to notebook --execute --inplace notebooks/03_core_model_iterations.ipynb
+   python -m nbconvert --to notebook --execute --inplace notebooks/04_raw_feature_convergence.ipynb
+   python -m nbconvert --to notebook --execute --inplace notebooks/05_final_comparison.ipynb
+   ```
+
+   Run 03 before 05: notebook 05 reads the kept iteration from `reports/m2_2/experiment_log.csv`.
 
 All random seeds are fixed (`random_state = 42`), so the numbers above reproduce.
 
