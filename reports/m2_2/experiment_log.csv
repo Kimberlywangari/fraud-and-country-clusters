@@ -1,2 +1,3 @@
 iteration,name,hypothesis,change,val_PR-AUC,val_FN,val_FP,trees,fit_seconds,sigma_seed,decision,val_missed_amount,val_alerts,val_cost_c100
-0,baseline (M2.1),the refactored package reproduces the J1 model,"none: J1 tuned XGBoost, engineered features, max-F1 threshold",0.9971766318083005,5,0,117,18.8,0.0002601072978098277,reference,2308170.09,1227.0,2430870.09
+0,baseline (M2.1),the refactored package reproduces the J1 model,"none: J1 tuned XGBoost, engineered features, max-F1 threshold",0.9971766318083004,5,0,117,24.5,0.0002601072978098,reference,2308170.09,1227.0,2430870.09
+1,ratio and flag features,trees cannot form ratios of two columns; maybe the misses need them (expected: little or no gain),"add amountToOldBalanceOrig, amountEqualsOldBalanceOrig, destWasEmpty (own-row fields only)",0.9973001753839926,5,1,58,13.5,0.0002601072978098277,revert,2308170.09,1228.0,2430970.09

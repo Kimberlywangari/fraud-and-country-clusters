@@ -1,7 +1,7 @@
 import pandas as pd
 import pytest
 
-from fraud.features import FORBIDDEN, make_features
+from fraud.features import FORBIDDEN, RATIO_COLS, add_ratio_features, make_features
 
 
 def make_frame(**overrides):
@@ -70,3 +70,45 @@ def test_features_do_not_change_when_the_label_changes():
     a, _, _ = make_features(make_frame(isFraud=0))
     b, _, _ = make_features(make_frame(isFraud=1))
     pd.testing.assert_frame_equal(a, b)
+
+
+def ratio_frame(**overrides):
+    X, _, _ = make_features(make_frame(**overrides))
+    return add_ratio_features(X)
+
+
+def test_ratio_is_amount_over_old_origin_balance():
+    X = ratio_frame(amount=250.0, oldbalanceOrg=1000.0, newbalanceOrig=750.0)
+    assert X.loc[0, "amountToOldBalanceOrig"] == 0.25
+
+
+def test_ratio_is_minus_one_when_the_origin_balance_is_zero_and_never_inf_or_nan():
+    X = ratio_frame(oldbalanceOrg=0.0, newbalanceOrig=0.0)
+    assert X.loc[0, "amountToOldBalanceOrig"] == -1.0
+    assert X[RATIO_COLS].notna().all().all()
+    assert not X[RATIO_COLS].isin([float("inf"), float("-inf")]).any().any()
+
+
+def test_equality_flag_is_one_only_when_the_whole_balance_moves():
+    whole = ratio_frame(amount=5000.0, oldbalanceOrg=5000.0, newbalanceOrig=0.0)
+    part = ratio_frame()  # 1000 of 5000
+    assert whole.loc[0, "amountEqualsOldBalanceOrig"] == 1
+    assert part.loc[0, "amountEqualsOldBalanceOrig"] == 0
+
+
+def test_dest_was_empty_flag():
+    assert ratio_frame(oldbalanceDest=0.0, newbalanceDest=1000.0).loc[0, "destWasEmpty"] == 1
+    assert ratio_frame().loc[0, "destWasEmpty"] == 0  # the destination held 200
+
+
+def test_add_ratio_features_keeps_the_original_columns_and_does_not_change_the_input():
+    X, _, engineered = make_features(make_frame())
+    before = X.copy()
+    out = add_ratio_features(X)
+    pd.testing.assert_frame_equal(X, before)  # the input frame is untouched
+    pd.testing.assert_frame_equal(out[engineered], before)  # the old columns are unchanged
+    assert list(out.columns) == engineered + RATIO_COLS
+
+
+def test_ratio_columns_are_not_labels_or_identifiers():
+    assert not set(FORBIDDEN) & set(RATIO_COLS)
