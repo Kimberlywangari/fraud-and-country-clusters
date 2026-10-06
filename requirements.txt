@@ -9,3 +9,4 @@ seaborn>=0.13
 jupyter
 ipykernel
 nbconvert
+pytest
