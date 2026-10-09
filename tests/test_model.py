@@ -1,8 +1,9 @@
 import numpy as np
+import pytest
 import pandas as pd
 from sklearn.metrics import average_precision_score
 
-from fraud.model import PARAM_NAMES, baseline_params, fit_xgb
+from fraud.model import PARAM_NAMES, baseline_params, fit_xgb, signed_log1p
 
 
 def test_baseline_params_are_the_rank_1_row_of_the_j1_search():
@@ -37,3 +38,16 @@ def test_fit_xgb_learns_a_simple_rule_and_stops_early():
     assert average_precision_score(y_va, score) > 0.95  # the naive rate is about 0.10
     assert model.best_iteration + 1 < 300  # early stopping ended training before the ceiling
     assert seconds > 0
+
+
+def test_signed_log1p_keeps_the_sign_and_is_zero_at_zero():
+    out = signed_log1p(np.array([-99.0, 0.0, 99.0]))
+    assert out[0] == -out[2] and out[1] == 0 and out[2] == np.log1p(99.0)
+
+
+def test_signed_log1p_is_computed_in_float64_even_for_int8_columns():
+    """An int8 column used to come back as float16, which rounds log1p(23) = 3.17805... to 3.178."""
+    frame = pd.DataFrame({"hour": np.array([0, 1, 23], dtype="int8"), "amount": [10.0, 20.0, 30.0]})
+    out = signed_log1p(frame)
+    assert out.dtype == np.float64
+    assert out[2, 0] == pytest.approx(np.log1p(23.0), abs=1e-12)

@@ -5,7 +5,11 @@ The hyper-parameters are not typed in here: they are read back from the J1 searc
 """
 import time
 
+import numpy as np
 import pandas as pd
+from sklearn.linear_model import LogisticRegression
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import FunctionTransformer, StandardScaler
 from xgboost import XGBClassifier
 
 from fraud.data import ROOT, SEED
@@ -33,3 +37,20 @@ def fit_xgb(X_train, y_train, X_val, y_val, params, seed=SEED, max_trees=MAX_TRE
     t = time.time()
     model.fit(X_train, y_train, eval_set=[(X_val, y_val)], verbose=False)
     return model, time.time() - t
+
+
+# --- Logistic regression (moved from notebooks/01_supervised_fraud.ipynb, cells 30-31) -------------------------------
+# Money amounts and balances are heavy-tailed, so inputs get a signed log transform and standard scaling before the
+# linear model. The scaler lives inside the pipeline, so it is fitted on whatever rows the pipeline is fitted on
+# (a training fold during cross-validation) and never on rows it will later score.
+
+def signed_log1p(a):
+    # Cast first: on an int8 column (isTransfer, origEmptied, hour) numpy would compute, and round, in float16.
+    a = np.asarray(a, dtype="float64")
+    return np.sign(a) * np.log1p(np.abs(a))
+
+
+def make_logreg(**logreg_params):
+    """The J1 logistic-regression pipeline. Pass LogisticRegression arguments to change its settings."""
+    params = {"max_iter": 1000, "random_state": SEED, **logreg_params}
+    return make_pipeline(FunctionTransformer(signed_log1p), StandardScaler(), LogisticRegression(**params))
