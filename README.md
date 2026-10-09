@@ -86,8 +86,28 @@ The J1 fraud model is the capstone's core model, and the J1 end state (`d3eae82`
 | Measurable improvement over the baseline, or a documented reason why not | [Report](reports/M2.2_progress_report.md), notebook 05, [final_comparison.csv](reports/m2_2/final_comparison.csv), [final_bootstrap.csv](reports/m2_2/final_bootstrap.csv) |
 | At least 2 distinct iterations recorded | [experiment_log.csv](reports/m2_2/experiment_log.csv), notebook 03 |
 | A real problem fixed or documented | Notebook 04, [raw_convergence.csv](reports/m2_2/raw_convergence.csv); the threshold problem in notebook 05 |
-| Tests | `python -m pytest -q` (45 fast tests); `python -m pytest -m slow` (2 tests against the real data) |
+| Tests | `python -m pytest -q` (45 fast tests at this checkpoint, 65 with J2); `python -m pytest -m slow` (2 tests against the real data) |
 | Incremental commit history and daily work | `git log --format='%h %ad %s' --date=short`, [daily_log.md](reports/m2_2/daily_log.md) |
+
+---
+
+## J2 checkpoint: evaluation and hyper-parameter tuning
+
+The prior models are the fraud classifiers from the earlier tracks (XGBoost and logistic regression, engineered features). Write-up: [reports/j2/J2_report.md](reports/j2/J2_report.md); leakage note: [reports/j2/leakage_note.md](reports/j2/leakage_note.md); notebook: [06_evaluation_and_tuning.ipynb](notebooks/06_evaluation_and_tuning.ipynb) (about 15 min).
+
+| Model | Tuned by | Test PR-AUC, untuned | Test PR-AUC, tuned | Difference real? |
+|---|---|---|---|---|
+| XGBoost | random search, 40 configurations | 0.9975 | 0.9975 | no (bootstrap interval straddles 0) |
+| Logistic regression | grid search, 10 combinations | 0.9921 | 0.9922 | no, only just (interval -0.0000 to +0.0004) |
+
+Tuning did not change how well either model ranks frauds. It did move XGBoost's operating point (7 missed frauds at the validation-chosen threshold, 4 after tuning), and it showed that J1's logistic-regression baseline was handicapped by class weighting, so XGBoost's lead over it is about 0.005, not 0.028. The metrics are PR-AUC (headline), ROC-AUC, and precision, recall and F1 at a validation-chosen threshold, with stratified CV; accuracy is not used because a model that never flags anything is 99.7% accurate.
+
+| Criterion | Where to find the evidence |
+|---|---|
+| Real grid or random search, tuned against untuned | Notebook 06 sections 3 and 4; [search_results.csv](reports/j2/search_results.csv), [tuned_vs_untuned.csv](reports/j2/tuned_vs_untuned.csv), [bootstrap.csv](reports/j2/bootstrap.csv); code in `fraud/search.py` |
+| Metrics that fit the problem, and why | Notebook 06 section 2; "Why these metrics" in [J2_report.md](reports/j2/J2_report.md) |
+| Leakage identified and ruled out, written note | [leakage_note.md](reports/j2/leakage_note.md), [leakage_checks.csv](reports/j2/leakage_checks.csv); code in `fraud/leakage.py` |
+| Tests | `tests/test_search.py`, `tests/test_leakage.py`, `tests/test_model.py` (`python -m pytest -q`, 65 tests) |
 
 ---
 
@@ -97,7 +117,7 @@ The J1 fraud model is the capstone's core model, and the J1 end state (`d3eae82`
 data/
   Country-data.csv                          committed (9 KB)
   PS_20174392719_1491204439457_log.csv      NOT committed (470 MB, see below)
-fraud/                                      tested code moved out of notebook 01 (data, features, metrics, model, experiments)
+fraud/                                      tested code moved out of notebook 01 (data, features, metrics, model, experiments, search, leakage)
 tests/                                      pytest tests (synthetic frames; two slow ones use the real data)
 notebooks/
   01_supervised_fraud.ipynb
@@ -105,11 +125,13 @@ notebooks/
   03_core_model_iterations.ipynb            M2.2
   04_raw_feature_convergence.ipynb          M2.2
   05_final_comparison.ipynb                 M2.2
+  06_evaluation_and_tuning.ipynb            J2
 reports/
   model_comparison.csv  ablation.csv  xgboost_tuning_results.csv
   kmeans_k_selection.csv  country_cluster_profile.csv  country_clusters.csv
   M2.2_progress_report.md
   m2_2/   experiment_log.csv  final_comparison.csv  final_bootstrap.csv  raw_convergence.csv  daily_log.md
+  j2/     J2_report.md  leakage_note.md  tuned_vs_untuned.csv  bootstrap.csv  search_results.csv  leakage_checks.csv
   figures/*.png
 pytest.ini
 requirements.txt
@@ -139,6 +161,12 @@ requirements.txt
    ```
 
    Run 03 before 05: notebook 05 reads the kept iteration from `reports/m2_2/experiment_log.csv`.
+
+   The J2 notebook is independent of the others:
+
+   ```
+   python -m nbconvert --to notebook --execute --inplace notebooks/06_evaluation_and_tuning.ipynb
+   ```
 
 All random seeds are fixed (`random_state = 42`), so the numbers above reproduce.
 

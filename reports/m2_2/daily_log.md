@@ -15,3 +15,10 @@ One short entry per working day, written on the day.
 - Problem fix: the raw-feature ablation model needed 1,886 of 2,000 trees. Refit with learning rate 0.1: 733 trees, same accuracy (test PR-AUC 0.9295 vs 0.9289), so the J1 ablation gap is not an under-training artefact. Notebook 04.
 - Final comparison on the test set (used once): PR-AUC unchanged (0.9972, same scores). The cost-based threshold from iteration 2 did NOT hold up: it catches no extra fraud on test (4 missed in both) and adds 588 false alarms, so cost at 100 units per alert rises from 944,953 to 1,003,753 (+58,800, interval +54,000 to +63,200). Decision: do not adopt it; keep the max-F1 threshold. Recorded as a judgment made after seeing the test result. Notebook 05.
 - Wrote the mid-sprint report and the README section. Open items: the 4 remaining test misses need information from outside the row; the operating point cannot be learned from 5 validation misses.
+
+## 2026-10-09
+- Started J2 (evaluation and tuning) on the same fraud model. Added search wrappers (random and grid, stratified CV, average-precision scoring) and leakage checks to the `fraud/` package, with tests.
+- Notebook 06: ran a 40-configuration random search for XGBoost and a 10-combination grid for logistic regression; compared each with its untuned version by stratified CV and once on the test set, with a paired bootstrap. Tuning did not change PR-AUC for either model; it moved XGBoost's missed frauds from 7 to 4.
+- The grid search showed J1's logistic-regression baseline was handicapped by class weighting, so the XGBoost margin over it is smaller than J1 reported.
+- Leakage checks: features independent of the label, no single column gives the label away, 11 duplicate test rows do not move the score, shuffled-label scores stay low, no tuning or scaling on test rows. Finding: the model needs balances recorded after settlement; without them PR-AUC is 0.76.
+- A first run failed on my own scaler check: `signed_log1p` was computing int8 columns in float16. Fixed it (float64) with a test and re-ran.
